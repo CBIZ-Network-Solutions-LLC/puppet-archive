@@ -15,6 +15,8 @@
 # - *$verbose: Default value true.
 # - *$proxy_server: Default value undef.
 # - *$user: The user used to download the archive
+# - *$extension: Optional extension for camptocamp compatibility
+# - *$target: Extract path for camptocamp compatibility
 #
 # Example usage:
 #
@@ -44,13 +46,22 @@ define archive::download (
   String                        $path             = $::path, # ignored
   Optional[String]              $proxy_server     = undef,
   Optional[String]              $user             = undef,
+  Optional[String]              $extension        = undef,
+  Optional[String]              $target           = undef,  
 ) {
-  $target = ($title =~ Stdlib::Compat::Absolute_path) ? {
+  # Modified by CBIZ to be compatible with previous archive module
+  $target_tmp = ($title =~ Stdlib::Compat::Absolute_path) ? {
     false   => "${src_target}/${title}",
     default => $title,
   }
 
-  archive { $target:
+  if $extension {
+    $target_final = "${target_tmp}.${extension}"
+  } else {
+    $target_final = "${target_tmp}"
+  }
+
+  archive { $target_final:
     ensure          => $ensure,
     source          => $url,
     checksum_verify => $checksum,
@@ -60,5 +71,6 @@ define archive::download (
     proxy_server    => $proxy_server,
     user            => $user,
     allow_insecure  => $allow_insecure,
+    extract_path    => $target,
   }
 }
